@@ -1,14 +1,8 @@
 import cv2
-#import os
 import numpy as np
 
+#frame title
 wTitle = 'jpg'
-directory = r'E:\\imgs'
-os.chdir(directory)
-# outdir = 'imgs'
-# if not os.path.isdir(outdir):
-#     os.makedirs(outdir)
-# os.chdir(outdir)
 
 # true if mouse is pressed
 drawing = False
