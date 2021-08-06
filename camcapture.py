@@ -11,7 +11,6 @@ import sys
 import time
 import cv2
 import asyncio
-import imutils
 import numpy as np
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from enum import Enum, auto
@@ -125,9 +124,9 @@ async def loop(grabber, nframes, tpf, outdir, imgfmt):
 	print()  # Ensure newline after the frames output
 
 async def wloop(nframes, tpf, outdir, imgfmt):
-	"""Capturing loop
-	for no Egrabber
-    """
+	"""Capturing loop for webcamera
+	does the same as a previous function
+	"""
 	wTitle = 'Press ESC to exit, SPACEBAR to record'
 	frameCount = 0
 	record = nframes > 0  # Whether to record the capturing frame as images
@@ -192,7 +191,6 @@ async def wloop(nframes, tpf, outdir, imgfmt):
 			await recordFrame(img, outdir, frameCount, imgfmt)
 			print(' ', frameCount, end='', sep='', flush=True)
 	vid.release()
-	# Destroy all the windows
 	print()  # Ensure newline after the frames output
 
 def run(grabber, nframes, fps, outdir, imgfmt):
