@@ -64,6 +64,7 @@ while(vid.isOpened()):
         print(Rect)
         break
     elif k == ord('c'):
-        cv2.imwrite(str(Rect[0]) + ".jpg", img)
+        crop = img[Rect[-2][1]:Rect[-1][1], Rect[-2][0]:Rect[-1][0]]
+        cv2.imwrite(str(Rect[0]) + ".jpg", crop)
         print(Rect)
 cv2.destroyAllWindows()
