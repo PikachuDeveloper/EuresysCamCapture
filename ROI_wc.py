@@ -1,8 +1,14 @@
 import cv2
+import os
 import numpy as np
 
-#frame title
 wTitle = 'jpg'
+directory = r'E:\\imgs'
+os.chdir(directory)
+# outdir = 'imgs'
+# if not os.path.isdir(outdir):
+#     os.makedirs(outdir)
+# os.chdir(outdir)
 
 # true if mouse is pressed
 drawing = False
@@ -25,9 +31,11 @@ mode = False
 def draw(event,x,y,flags,param):
     global drawing, Rect, mode, img
     if event == cv2.EVENT_LBUTTONDOWN:
+        mode = True
         drawing = True
-        Rect[0] = (x, y)
+        Rect[0], Rect[1] = (x, y), (x, y)
     elif event == cv2.EVENT_MOUSEMOVE and drawing:
+        Rect[1] = (x, y)
         img = cv2.rectangle(img,Rect[0],(x,y),(0,255,0),0)
         cv2.imshow(wTitle, img)
 
@@ -55,4 +63,7 @@ while(vid.isOpened()):
     if k == ord('q'):
         print(Rect)
         break
+    elif k == ord('c'):
+        cv2.imwrite(str(Rect[0]) + ".jpg", img)
+        print(Rect)
 cv2.destroyAllWindows()
