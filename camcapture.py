@@ -16,16 +16,16 @@ from enum import Enum, auto
 from egrabber import *
 
 # true if mouse is pressed
-drawing = False
+roiDrawing = False
 
 # coordinates (x0, y0), (x1, y1) of the top left and
 # bottom right corners to draw a ROI
-Rect = [(0, 0), (2, 2)]
+roiRect = [(0, 0), (1, 1), (2, 2), (3, 3)]
 
 
 #True if rectangle should be drawn on a screen
 #False if Rbutton pressed or rectangle was not drawn yet
-mode = False
+roiMode = False
 
 
 class ImageFormat(Enum):
@@ -49,8 +49,8 @@ async def recordFrame(rgb, outdir, framenum, imgfmt):
 	framenum: uint  - frame number
 	imgfmt: str  - image format of the output frames
 	"""
-	if mode:
-		rgb = rgb[Rect[-2][1]:Rect[-1][1], Rect[-2][0]:Rect[-1][0]]
+	if roiMode:
+		rgb = rgb[roiRect[-2][1]:roiRect[-1][1], roiRect[-2][0]:roiRect[-1][0]]
 	cv2.imwrite(os.path.join(outdir, 'frame.{:03}.{}'.format(framenum, imgfmt)), rgb)
 	# if isinstance(rgb, (np.ndarray, type(None))):
 	# 	cv2.imwrite(os.path.join(outdir, 'frame.{:03}.{}'.format(framenum, imgfmt)), rgb)
@@ -59,21 +59,21 @@ async def recordFrame(rgb, outdir, framenum, imgfmt):
 
 
 def setRoi(event, x, y, flags, params):
-	global drawing, Rect, mode
+	global roiDrawing, roiRect, roiMode
 	if event == cv2.EVENT_LBUTTONDOWN:
-		mode = True
-		drawing = True
-		Rect[0], Rect[1] = (x, y), (x, y)
-	elif event == cv2.EVENT_MOUSEMOVE and drawing:
-		Rect[1] = (x, y)
+		roiMode = True
+		roiDrawing = True
+		roiRect[0], roiRect[1] = (x, y), (x, y)
+	elif event == cv2.EVENT_MOUSEMOVE and roiDrawing:
+		roiRect[1] = (x, y)
 
 	elif event == cv2.EVENT_LBUTTONUP:
-		mode = True
-		drawing = False
-		Rect[1] = (x, y)
+		roiMode = True
+		roiDrawing = False
+		roiRect[1] = (x, y)
 
 	elif event == cv2.EVENT_RBUTTONUP:
-		mode = False
+		roiMode = False
 
 # , vidout
 async def loop(grabber, nframes, tpf, outdir, imgfmt):
@@ -123,8 +123,8 @@ async def loop(grabber, nframes, tpf, outdir, imgfmt):
 						print('Recorded frames:', end='')
 
 				img = rgb8_to_ndarray(rgb, w, h)
-				if mode:
-					img = cv2.rectangle(img, Rect[0], Rect[1], (0, 255, 0), 0)
+				if roiMode:
+					img = cv2.rectangle(img, roiRect[0], roiRect[1], (0, 255, 0), 0)
 				if record:
 					_, _, w0, h0 = cv2.getWindowImageRect(wTitle)
 					img = cv2.resize(img, (w0, h0))
@@ -153,7 +153,7 @@ async def loop(grabber, nframes, tpf, outdir, imgfmt):
 			# vidout.write(img)
 	print()  # Ensure newline after the frames output
 
-async def wloop(nframes, tpf, outdir, imgfmt):
+async def wloop(nframes, tpf, outdir, imgfmt, webcam):
 	"""Capturing loop for webcamera
 	does the same as a previous function
 	"""
@@ -169,7 +169,7 @@ async def wloop(nframes, tpf, outdir, imgfmt):
 		cv2.setMouseCallback(wTitle, setRoi)
 	else:
 		print('Recorded frames:', end='')
-	vid = cv2.VideoCapture(0)
+	vid = cv2.VideoCapture(webcam)
 	while True:
 		start = time.perf_counter()
 		# timeout in milliseconds
@@ -181,9 +181,8 @@ async def wloop(nframes, tpf, outdir, imgfmt):
 				rfont = w / w0
 				cv2.resizeWindow(wTitle, w0, int(h / rfont))
 			#img = cv2.resize(frame, (w0, int(h / rfont)))
-			if mode:
-				img = cv2.rectangle(img, Rect[0], Rect[1], (0, 255, 0), 0)
-			cv2.imshow(wTitle, img)
+			#
+			# cv2.imshow(wTitle, img)
 
 			key = cv2.waitKey(1) & 0xFF
 			# Quit: escape, e or q
@@ -200,6 +199,8 @@ async def wloop(nframes, tpf, outdir, imgfmt):
 				if record:
 					print('Recorded frames:', end='')
 			img = frame.copy()
+			if roiMode:
+				img = cv2.rectangle(img, roiRect[0], roiRect[1], (0, 255, 0), 0)
 			if record:
 				_, _, w0, h0 = cv2.getWindowImageRect(wTitle)
 				img = cv2.resize(img, (w0, h0))
@@ -225,21 +226,21 @@ async def wloop(nframes, tpf, outdir, imgfmt):
 	vid.release()
 	print()  # Ensure newline after the frames output
 
-def run(grabber, nframes, fps, outdir, imgfmt):
+def run(grabber, nframes, fps, outdir, imgfmt, args.webcam):
 	if grabber:
 		grabber.realloc_buffers(8)  # 3
 		# w = grabber.get_width()
 		# h = grabber.get_height()
 		# fourcc = cv2.VideoWriter_fourcc(*'DIVX')
 		# outdir = os.path.splitext(__file__)[0] + '.output'
-	# os.chdir(r'E:\\')
+	os.chdir(r'E:\\')
 	if not os.path.isdir(outdir):
 		os.makedirs(outdir)
 	# out = cv2.VideoWriter(os.path.join(outdir, 'output.avi'), fourcc, fps, (w,  h))
 	if grabber:
 		asyncio.run(loop(grabber, nframes, 1000 / fps, outdir, imgfmt))
 	else:
-		asyncio.run(wloop(nframes, 1000 / fps, outdir, imgfmt))
+		asyncio.run(wloop(nframes, 1000 / fps, outdir, imgfmt, args.webcam))
 	if not nframes:
 		cv2.destroyAllWindows()
 
@@ -256,13 +257,13 @@ if __name__ == '__main__':
 		help='The number of frames to be captured, being started without any Graphical User Interface')
 	parser.add_argument('-o', '--outp-dir', default='imgs',
 		help='Output directory for the captured images')
-	parser.add_argument('-webcam', '--webcam', type=bool, default=False,
+	parser.add_argument('-c', '--webcam', type=int, default=None,
 						help='Is true if you need to use webCamera')
 	args = parser.parse_args()
 
-	if not args.webcam:
+	if args.webcam == None:
 		gentl = EGenTL()
 		grabber = EGrabber(gentl)
 	else:
 		grabber = None
-	run(grabber, args.nframes, args.fps, args.outp_dir, args.img_format)
+	run(grabber, args.nframes, args.fps, args.outp_dir, args.img_format, args.webcam)
